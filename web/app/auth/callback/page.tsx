@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import { useAuth } from "@/components/auth/useAuth";
 
 export default function AuthCallbackPage() {
@@ -11,6 +11,7 @@ export default function AuthCallbackPage() {
   const { reloadProfile } = useAuth();
 
   useEffect(() => {
+    const supabase = getSupabaseClient();
     const completeAuth = async () => {
       const { data, error } = await supabase.auth.getSession();
       if (error) {

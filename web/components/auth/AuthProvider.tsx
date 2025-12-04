@@ -4,7 +4,7 @@ import { createContext, useCallback, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 
-import { supabase } from "@/lib/supabaseClient";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 import type { AuthContextValue, AuthStage, UserProfile } from "./useAuth";
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -16,6 +16,7 @@ function isProfileComplete(profile: UserProfile | null): boolean {
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const supabase = useMemo(() => getSupabaseClient(), []);
   const [stage, setStage] = useState<AuthStage>("enterEmail");
   const [supabaseUser, setSupabaseUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -53,8 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setIsLoading(false);
       }
-    },
-    [supabaseUser],
+      },
+    [supabase, supabaseUser],
   );
 
   useEffect(() => {
@@ -115,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription?.subscription.unsubscribe();
     };
-  }, [loadProfile, router]);
+  }, [loadProfile, router, supabase]);
 
   const sendMagicLink = useCallback(async (email: string) => {
     setError(null);
@@ -147,7 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [supabase]);
 
   const reloadProfile = useCallback(async () => {
     if (!supabaseUser) return;
@@ -189,8 +190,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setIsLoading(false);
       }
-    },
-    [supabaseUser],
+      },
+    [supabase, supabaseUser],
   );
 
   const startEditingProfile = useCallback(() => {
@@ -214,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, supabase]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

@@ -27,6 +27,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (userId: string, userEmail?: string | null) => {
       setIsLoading(true);
       try {
+        if (!supabase) {
+          setError("Supabase client is not configured");
+          setStage("enterEmail");
+          return;
+        }
+
         const { data, error: profileError } = await supabase
           .from("profiles")
           .select("id, email, full_name, avatar_url, updated_at")
@@ -63,6 +69,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initialize = async () => {
       setIsLoading(true);
+      if (!supabase) {
+        setError("Supabase client is not configured");
+        setStage("enterEmail");
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
         if (sessionError) {
@@ -91,26 +104,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initialize();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const user = session?.user ?? null;
-      setSupabaseUser(user);
-      if (!user) {
-        setProfile(null);
-        setStage("enterEmail");
-        return;
-      }
+    const { data: subscription } = supabase?.auth.onAuthStateChange(
+      async (event, session) => {
+        const user = session?.user ?? null;
+        setSupabaseUser(user);
+        if (!user) {
+          setProfile(null);
+          setStage("enterEmail");
+          return;
+        }
 
-      if (event === "SIGNED_IN") {
-        setStage("authenticatedProfileCheck");
-        await loadProfile(user.id, user.email);
-        router.refresh();
-      }
+        if (event === "SIGNED_IN") {
+          setStage("authenticatedProfileCheck");
+          await loadProfile(user.id, user.email);
+          router.refresh();
+        }
 
-      if (event === "SIGNED_OUT") {
-        setProfile(null);
-        setStage("enterEmail");
-      }
-    });
+        if (event === "SIGNED_OUT") {
+          setProfile(null);
+          setStage("enterEmail");
+        }
+      },
+    ) ?? { subscription: { unsubscribe: () => {} } };
 
     return () => {
       mounted = false;
@@ -123,6 +138,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     setStage("sendingMagicLink");
     try {
+      if (!supabase) {
+        throw new Error("Supabase client is not configured");
+      }
+
       const { error: signInError } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -152,8 +171,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const reloadProfile = useCallback(async () => {
     if (!supabaseUser) return;
+    if (!supabase) {
+      setError("Supabase client is not configured");
+      return;
+    }
     await loadProfile(supabaseUser.id, supabaseUser.email);
-  }, [loadProfile, supabaseUser]);
+  }, [loadProfile, supabase, supabaseUser]);
 
   const updateProfile = useCallback(
     async (updates: Partial<UserProfile>) => {
@@ -161,6 +184,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       setError(null);
       try {
+        if (!supabase) {
+          throw new Error("Supabase client is not configured");
+        }
+
         const payload = {
           id: supabaseUser.id,
           email: supabaseUser.email ?? "",
@@ -205,6 +232,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     setIsLoading(true);
     try {
+      if (!supabase) {
+        throw new Error("Supabase client is not configured");
+      }
+
       await supabase.auth.signOut();
       setSupabaseUser(null);
       setProfile(null);

@@ -13,6 +13,11 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const supabase = getSupabaseClient();
     const completeAuth = async () => {
+      if (!supabase) {
+        router.replace("/login");
+        return;
+      }
+
       const { data, error } = await supabase.auth.getSession();
       if (error) {
         router.replace("/login");

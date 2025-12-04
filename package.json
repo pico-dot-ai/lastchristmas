@@ -1,0 +1,8 @@
+{
+  "name": "lastchristmas-monorepo",
+  "private": true,
+  "workspaces": ["web"],
+  "devDependencies": {
+    "next": "14.2.33"
+  }
+}

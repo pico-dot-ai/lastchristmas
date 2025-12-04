@@ -25,6 +25,10 @@ const INITIAL_STATE: AuthState = {
 async function fetchProfile(userId: string): Promise<Profile | null> {
   const supabase = getSupabaseClient();
 
+  if (!supabase) {
+    throw new Error("Supabase client unavailable");
+  }
+
   const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, avatar_url")
@@ -80,6 +84,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initialize = useCallback(async () => {
     try {
       const supabase = getSupabaseClient();
+      if (!supabase) {
+        setState((current) => ({ ...current, isLoading: false, error: "Supabase client unavailable", stage: "enterEmail" }));
+        return;
+      }
       const { data } = await supabase.auth.getSession();
       const session = data.session;
       const user = session?.user ?? null;
@@ -104,6 +112,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       supabase = getSupabaseClient();
+      if (!supabase) {
+        setState((current) => ({ ...current, isLoading: false, error: "Supabase client unavailable", stage: "enterEmail" }));
+        return;
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Supabase client unavailable";
       setState((current) => ({ ...current, isLoading: false, error: message, stage: "enterEmail" }));
@@ -142,6 +154,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const supabase = getSupabaseClient();
+        if (!supabase) {
+          throw new Error("Supabase client unavailable");
+        }
         const redirectTo = typeof window === "undefined" ? undefined : `${window.location.origin}/auth/callback`;
         const { error } = await supabase.auth.signInWithOtp({
           email,
@@ -171,6 +186,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
       const supabase = getSupabaseClient();
+      if (!supabase) {
+        setState((current) => ({ ...current, isLoading: false, error: "Supabase client unavailable" }));
+        return;
+      }
       const { data } = await supabase.auth.getSession();
       const user = data.session?.user;
 
@@ -198,6 +217,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const supabase = getSupabaseClient();
+        if (!supabase) {
+          throw new Error("Supabase client unavailable");
+        }
         const { error } = await supabase
           .from("profiles")
           .upsert({ id: state.user.id, ...profile }, { onConflict: "id" });
@@ -220,6 +242,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
       const supabase = getSupabaseClient();
+      if (!supabase) {
+        throw new Error("Supabase client unavailable");
+      }
       const { error } = await supabase.auth.signOut();
       if (error) {
         throw new Error(error.message);

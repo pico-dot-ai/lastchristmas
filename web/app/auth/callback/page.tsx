@@ -13,7 +13,9 @@ export default function AuthCallbackPage() {
     const finalize = async () => {
       try {
         const supabase = getSupabaseClient();
-        await supabase.auth.exchangeCodeForSession(window.location.href);
+        if (supabase) {
+          await supabase.auth.exchangeCodeForSession(window.location.href);
+        }
       } catch (error) {
         console.error("Failed to exchange code for session", error);
       }

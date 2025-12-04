@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { requestMagicLink, signOut, getSession, onAuthStateChange } from '../../auth/auth-client';
+import { isSupabaseConfigured } from '../../../lib/supabase/client';
 import { getCurrentUserProfile, mapUserToProfile, type UserProfile } from '../user-client';
 
 const formatEmailStatus = (isConfirmed: boolean) =>
@@ -12,26 +13,42 @@ export function UserCard() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSupabaseReady = isSupabaseConfigured();
 
   useEffect(() => {
+    if (!isSupabaseReady) {
+      setStatusMessage(
+        'Supabase environment variables are missing. Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to enable authentication.',
+      );
+      return () => undefined;
+    }
+
     const loadSession = async () => {
-      const { data } = await getSession();
-      if (data.session?.user) {
-        setUser(mapUserToProfile(data.session.user));
-      } else {
-        const profile = await getCurrentUserProfile();
-        setUser(profile);
+      try {
+        const { data } = await getSession();
+        if (data.session?.user) {
+          setUser(mapUserToProfile(data.session.user));
+        } else {
+          const profile = await getCurrentUserProfile();
+          setUser(profile);
+        }
+      } catch (error) {
+        setStatusMessage(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load authentication session. Confirm Supabase configuration.',
+        );
       }
     };
 
-    loadSession();
+    void loadSession();
 
     const subscription = onAuthStateChange((_event, session) => {
       setUser(session?.user ? mapUserToProfile(session.user) : null);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isSupabaseReady]);
 
   const greeting = useMemo(() => {
     if (user?.email) {
@@ -44,22 +61,52 @@ export function UserCard() {
     event.preventDefault();
     if (!email) return;
 
+    if (!isSupabaseReady) {
+      setStatusMessage(
+        'Supabase auth is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to continue.',
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     setStatusMessage('Sending magic link...');
 
-    const { error } = await requestMagicLink(email);
-    if (error) {
-      setStatusMessage(error.message);
-    } else {
-      setStatusMessage('Check your email for the magic link.');
+    try {
+      const { error } = await requestMagicLink(email);
+      if (error) {
+        setStatusMessage(error.message);
+      } else {
+        setStatusMessage('Check your email for the magic link.');
+      }
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to request a magic link. Confirm Supabase configuration.',
+      );
     }
 
     setIsSubmitting(false);
   };
 
   const handleLogout = async () => {
-    await signOut();
-    setUser(null);
+    if (!isSupabaseReady) {
+      setStatusMessage(
+        'Supabase auth is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to continue.',
+      );
+      return;
+    }
+
+    try {
+      await signOut();
+      setUser(null);
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to sign out. Confirm Supabase configuration.',
+      );
+    }
   };
 
   return (

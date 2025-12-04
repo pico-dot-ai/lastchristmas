@@ -3,7 +3,17 @@
 import { type User } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient } from '../../lib/supabase/client';
 
-const supabase = getSupabaseBrowserClient();
+const getSupabaseClientOrThrow = () => {
+  const supabase = getSupabaseBrowserClient();
+
+  if (!supabase) {
+    throw new Error(
+      'Supabase client is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to continue.',
+    );
+  }
+
+  return supabase;
+};
 
 export type UserProfile = {
   id: string;
@@ -12,7 +22,7 @@ export type UserProfile = {
 };
 
 export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
-  const { data, error } = await supabase.auth.getUser();
+  const { data, error } = await getSupabaseClientOrThrow().auth.getUser();
 
   if (error || !data.user) {
     return null;

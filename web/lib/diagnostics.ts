@@ -38,7 +38,7 @@ function getPublicClient() {
 
   cachedPublicClient = createClient(url, publicKey, {
     auth: { autoRefreshToken: false, persistSession: false },
-    db: { schema: "api" },
+    db: { schema: "public" },
   });
 
   return cachedPublicClient;
@@ -58,7 +58,7 @@ function getAdminClient() {
 
   cachedAdminClient = createClient(url, secretKey, {
     auth: { autoRefreshToken: false, persistSession: false },
-    db: { schema: "api" },
+    db: { schema: "public" },
   });
 
   return cachedAdminClient;

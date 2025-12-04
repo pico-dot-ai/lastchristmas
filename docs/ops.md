@@ -30,6 +30,7 @@
 - Build: `npm run build`; Start: `npm run start`.
 - Deploy target: Vercel with project root `web/`; ensure env vars set in Vercel and Node.js 20 runtime is selected (functions)/edge where appropriate.
 - Web push depends on HTTPS/PWA install; configure when notification features are added.
+- The repository ships a `vercel.json` with a `builds` block and monorepo-style routing so Vercel knows to build from `web/`. Vercel currently logs `WARN! Due to "builds" existing in your configuration file...` during deploys; this is expected. If you later set the project root to `web` in Vercel project settings, you can drop the `builds` + `routes` entries to silence the warning.
 
 ## Testing/linting (to flesh out)
 - ESLint available via `npm run lint`.

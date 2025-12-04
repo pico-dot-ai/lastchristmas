@@ -22,8 +22,10 @@ export type FeatureFlag = {
 const LOGS_TABLE = "debug_logs";
 const FLAGS_TABLE = "feature_flags";
 
-let cachedPublicClient: SupabaseClient | null | undefined;
-let cachedAdminClient: SupabaseClient | null | undefined;
+type ApiSchemaClient = SupabaseClient<any, "api", "api">;
+
+let cachedPublicClient: ApiSchemaClient | null | undefined;
+let cachedAdminClient: ApiSchemaClient | null | undefined;
 
 function getPublicClient() {
   if (cachedPublicClient !== undefined) return cachedPublicClient;
@@ -36,7 +38,7 @@ function getPublicClient() {
     return null;
   }
 
-  cachedPublicClient = createClient(url, publicKey, {
+  cachedPublicClient = createClient<any, "api", "api">(url, publicKey, {
     auth: { autoRefreshToken: false, persistSession: false },
     db: { schema: "api" },
   });
@@ -56,7 +58,7 @@ function getAdminClient() {
     return null;
   }
 
-  cachedAdminClient = createClient(url, secretKey, {
+  cachedAdminClient = createClient<any, "api", "api">(url, secretKey, {
     auth: { autoRefreshToken: false, persistSession: false },
     db: { schema: "api" },
   });

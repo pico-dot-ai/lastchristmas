@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/auth/types";
 
 export type UserCardMode = "enterEmail" | "waiting" | "view" | "edit";
@@ -32,6 +32,14 @@ export function UserCard({
 }: Props) {
   const [emailInput, setEmailInput] = useState(email ?? "");
   const [draftProfile, setDraftProfile] = useState<Partial<Profile>>(profile ?? {});
+
+  useEffect(() => {
+    setEmailInput(email ?? "");
+  }, [email]);
+
+  useEffect(() => {
+    setDraftProfile(profile ?? {});
+  }, [profile]);
 
   const title = useMemo(() => {
     switch (mode) {

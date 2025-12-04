@@ -11,7 +11,12 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const finalize = async () => {
-      await supabaseClient.auth.getSession();
+      try {
+        await supabaseClient.auth.exchangeCodeForSession(window.location.href);
+      } catch (error) {
+        console.error("Failed to exchange code for session", error);
+      }
+
       await reloadProfile();
       router.replace("/account");
     };

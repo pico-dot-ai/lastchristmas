@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseClient } from "@/lib/supabase-client";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import { useAuth } from "@/components/auth/auth-provider";
 
 export default function AuthCallbackPage() {
@@ -12,7 +12,8 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const finalize = async () => {
       try {
-        await supabaseClient.auth.exchangeCodeForSession(window.location.href);
+        const supabase = getSupabaseClient();
+        await supabase.auth.exchangeCodeForSession(window.location.href);
       } catch (error) {
         console.error("Failed to exchange code for session", error);
       }

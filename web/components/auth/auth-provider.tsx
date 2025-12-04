@@ -8,7 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { supabaseClient } from "@/lib/supabase-client";
+import { getSupabaseClient } from "@/lib/supabase-client";
 import type { AuthContextValue, AuthState, Profile } from "@/lib/auth/types";
 import { isProfileComplete } from "@/lib/auth/types";
 
@@ -23,7 +23,9 @@ const INITIAL_STATE: AuthState = {
 };
 
 async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabaseClient
+  const supabase = getSupabaseClient();
+
+  const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, avatar_url")
     .eq("id", userId)
@@ -77,7 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const initialize = useCallback(async () => {
     try {
-      const { data } = await supabaseClient.auth.getSession();
+      const supabase = getSupabaseClient();
+      const { data } = await supabase.auth.getSession();
       const session = data.session;
       const user = session?.user ?? null;
 
@@ -97,7 +100,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initialize();
 
-    const { data: listener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    let supabase: ReturnType<typeof getSupabaseClient> | null = null;
+
+    try {
+      supabase = getSupabaseClient();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Supabase client unavailable";
+      setState((current) => ({ ...current, isLoading: false, error: message, stage: "enterEmail" }));
+      return;
+    }
+
+    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
         setIsEditing(false);
         setAwaitingLink(false);
@@ -128,8 +141,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState((current) => ({ ...current, error: null, stage: "sendingLink" }));
 
       try {
+        const supabase = getSupabaseClient();
         const redirectTo = typeof window === "undefined" ? undefined : `${window.location.origin}/auth/callback`;
-        const { error } = await supabaseClient.auth.signInWithOtp({
+        const { error } = await supabase.auth.signInWithOtp({
           email,
           options: {
             shouldCreateUser: true,
@@ -156,7 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const reloadProfile = useCallback(async () => {
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const { data } = await supabaseClient.auth.getSession();
+      const supabase = getSupabaseClient();
+      const { data } = await supabase.auth.getSession();
       const user = data.session?.user;
 
       if (!user) {
@@ -182,7 +197,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState((current) => ({ ...current, isLoading: true, error: null }));
 
       try {
-        const { error } = await supabaseClient
+        const supabase = getSupabaseClient();
+        const { error } = await supabase
           .from("profiles")
           .upsert({ id: state.user.id, ...profile }, { onConflict: "id" });
 
@@ -203,7 +219,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const { error } = await supabaseClient.auth.signOut();
+      const supabase = getSupabaseClient();
+      const { error } = await supabase.auth.signOut();
       if (error) {
         throw new Error(error.message);
       }

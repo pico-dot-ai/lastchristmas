@@ -1,39 +1,68 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
-import { requestMagicLink, signOut, getSession, onAuthStateChange } from '../../auth/auth-client';
+import { getSession, onAuthStateChange, requestMagicLink, signOut } from '../../auth/auth-client';
 import { isSupabaseConfigured } from '../../../lib/supabase/client';
-import { getCurrentUserProfile, mapUserToProfile, type UserProfile } from '../user-client';
+import {
+  fetchProfile,
+  updateProfile,
+  uploadAvatar,
+  type UpdateProfileInput,
+} from '../user-client';
+import { type UserProfile } from '../user-types';
 
-const formatEmailStatus = (isConfirmed: boolean) =>
-  isConfirmed ? 'Verified email' : 'Email not yet verified';
+type UserCardProps = {
+  initialProfile: UserProfile | null;
+  initialEmail?: string;
+};
 
-export function UserCard() {
-  const [email, setEmail] = useState('');
-  const [user, setUser] = useState<UserProfile | null>(null);
+export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
+  const [email, setEmail] = useState(initialEmail);
+  const [user, setUser] = useState<UserProfile | null>(initialProfile);
   const [statusMessage, setStatusMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSessionResolved, setIsSessionResolved] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isSessionResolved, setIsSessionResolved] = useState(true);
+  const [profileDraft, setProfileDraft] = useState<UpdateProfileInput>({
+    displayName: initialProfile?.displayName ?? '',
+    firstName: initialProfile?.firstName ?? '',
+    lastName: initialProfile?.lastName ?? '',
+    dob: initialProfile?.dob ?? null,
+  });
   const isSupabaseReady = isSupabaseConfigured();
+
+  useEffect(() => {
+    setProfileDraft({
+      displayName: user?.displayName ?? '',
+      firstName: user?.firstName ?? '',
+      lastName: user?.lastName ?? '',
+      dob: user?.dob ?? null,
+    });
+    if (user?.email) {
+      setEmail(user.email);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!isSupabaseReady) {
       setStatusMessage(
         'Supabase environment variables are missing. Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to enable authentication.',
       );
-      setIsSessionResolved(true);
       return () => undefined;
     }
 
-    const loadSession = async () => {
+    const refreshProfile = async () => {
       try {
         const { data } = await getSession();
-        if (data.session?.user) {
-          setUser(mapUserToProfile(data.session.user));
-        } else {
-          const profile = await getCurrentUserProfile();
-          setUser(profile);
+        if (!data.session) {
+          setUser(null);
+          setIsSessionResolved(true);
+          return;
         }
+        const profile = await fetchProfile();
+        setUser(profile);
       } catch (error) {
         setStatusMessage(
           error instanceof Error
@@ -45,11 +74,15 @@ export function UserCard() {
       }
     };
 
-    void loadSession();
+    void refreshProfile();
 
     const subscription = onAuthStateChange((_event, session) => {
-      setUser(session?.user ? mapUserToProfile(session.user) : null);
-      setIsSessionResolved(true);
+      if (session?.user) {
+        void refreshProfile();
+      } else {
+        setUser(null);
+        setIsSessionResolved(true);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -61,10 +94,6 @@ export function UserCard() {
     }
     return 'Sign in to get started';
   }, [user?.email]);
-
-  if (!isSessionResolved) {
-    return null;
-  }
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -118,6 +147,49 @@ export function UserCard() {
     }
   };
 
+  const handleProfileSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!user) return;
+
+    setIsSavingProfile(true);
+    setStatusMessage('');
+
+    try {
+      const updated = await updateProfile(profileDraft);
+      setUser(updated);
+      setStatusMessage('Profile updated.');
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : 'Unable to update your profile right now.',
+      );
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files?.length) return;
+
+    const file = event.target.files[0];
+    setIsUploadingAvatar(true);
+    setStatusMessage('');
+
+    try {
+      const updated = await uploadAvatar(file);
+      setUser(updated);
+      setStatusMessage('Avatar updated.');
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Unable to upload avatar.');
+    } finally {
+      setIsUploadingAvatar(false);
+      event.target.value = '';
+    }
+  };
+
+  if (!isSessionResolved) {
+    return null;
+  }
+
   return (
     <section className="card">
       <div className="card__header">
@@ -130,6 +202,31 @@ export function UserCard() {
 
       {user ? (
         <div className="card__section">
+          <div className="user-avatar">
+            {user.avatarUrl ? (
+              <Image
+                src={user.avatarUrl}
+                alt="User avatar"
+                width={96}
+                height={96}
+                className="user-avatar__image"
+                unoptimized
+              />
+            ) : (
+              <div className="user-avatar__placeholder" aria-hidden />
+            )}
+            <label className="button button--secondary">
+              {isUploadingAvatar ? 'Uploading...' : 'Upload avatar'}
+              <input
+                type="file"
+                accept="image/*"
+                className="user-avatar__input"
+                onChange={handleAvatarChange}
+                disabled={isUploadingAvatar}
+              />
+            </label>
+          </div>
+
           <dl className="user-details">
             <div className="user-details__row">
               <dt>ID</dt>
@@ -140,10 +237,88 @@ export function UserCard() {
               <dd>{user.email}</dd>
             </div>
             <div className="user-details__row">
-              <dt>Status</dt>
-              <dd>{formatEmailStatus(user.emailConfirmed)}</dd>
+              <dt>Display name</dt>
+              <dd>{user.displayName}</dd>
+            </div>
+            <div className="user-details__row">
+              <dt>First name</dt>
+              <dd>{user.firstName}</dd>
+            </div>
+            <div className="user-details__row">
+              <dt>Last name</dt>
+              <dd>{user.lastName}</dd>
+            </div>
+            <div className="user-details__row">
+              <dt>Date of birth</dt>
+              <dd>{user.dob ?? '—'}</dd>
             </div>
           </dl>
+
+          <form className="card__section auth-form" onSubmit={handleProfileSave}>
+            <label htmlFor="displayName" className="auth-form__label">
+              Display name
+            </label>
+            <input
+              id="displayName"
+              name="displayName"
+              type="text"
+              value={profileDraft.displayName ?? ''}
+              onChange={(event) =>
+                setProfileDraft((current) => ({ ...current, displayName: event.target.value }))
+              }
+              className="auth-form__input"
+              placeholder="Display name"
+            />
+
+            <label htmlFor="firstName" className="auth-form__label">
+              First name
+            </label>
+            <input
+              id="firstName"
+              name="firstName"
+              type="text"
+              value={profileDraft.firstName ?? ''}
+              onChange={(event) =>
+                setProfileDraft((current) => ({ ...current, firstName: event.target.value }))
+              }
+              className="auth-form__input"
+              placeholder="First name"
+            />
+
+            <label htmlFor="lastName" className="auth-form__label">
+              Last name
+            </label>
+            <input
+              id="lastName"
+              name="lastName"
+              type="text"
+              value={profileDraft.lastName ?? ''}
+              onChange={(event) =>
+                setProfileDraft((current) => ({ ...current, lastName: event.target.value }))
+              }
+              className="auth-form__input"
+              placeholder="Last name"
+            />
+
+            <label htmlFor="dob" className="auth-form__label">
+              Date of birth
+            </label>
+            <input
+              id="dob"
+              name="dob"
+              type="date"
+              value={profileDraft.dob ?? ''}
+              onChange={(event) =>
+                setProfileDraft((current) => ({ ...current, dob: event.target.value || null }))
+              }
+              className="auth-form__input"
+            />
+
+            <button className="button" type="submit" disabled={isSavingProfile}>
+              {isSavingProfile ? 'Saving...' : 'Save profile'}
+            </button>
+          </form>
+
           <button type="button" className="button button--secondary" onClick={handleLogout}>
             Sign out
           </button>

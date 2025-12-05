@@ -46,10 +46,8 @@ export async function PUT(request: NextRequest) {
   try {
     const profile = await upsertProfileForUser(supabase, user, {
       displayName: body.displayName,
-      firstName: body.firstName,
-      lastName: body.lastName,
-      dob: body.dob ?? null,
       avatarUrl: body.avatarUrl,
+      gradientColor: body.gradientColor,
     });
 
     return NextResponse.json({ profile });

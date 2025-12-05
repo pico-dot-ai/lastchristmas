@@ -3,17 +3,14 @@ import { type UserProfile } from './user-types';
 
 const AVATAR_BUCKET = 'avatars';
 
-const PROFILE_SELECT =
-  'id, display_name, avatar_url, dob, created_at, first_name, last_name';
+const PROFILE_SELECT = 'id, display_name, avatar_url, created_at, accent_color';
 
 type ProfileRow = {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
-  dob: string | null;
   created_at: string | null;
-  first_name: string | null;
-  last_name: string | null;
+  accent_color: string | null;
 };
 
 const mapProfile = (
@@ -24,18 +21,10 @@ const mapProfile = (
   id: row.id,
   email: email ?? 'Unknown user',
   displayName: row.display_name ?? email ?? 'Player',
-  firstName: row.first_name ?? '',
-  lastName: row.last_name ?? '',
-  dob: row.dob,
   avatarUrl: signedAvatarUrl ?? row.avatar_url,
   createdAt: row.created_at,
+  gradientColor: row.accent_color,
 });
-
-const seedNames = (fullName?: string | null) => {
-  if (!fullName) return { firstName: null, lastName: null };
-  const [first, ...rest] = fullName.split(' ');
-  return { firstName: first ?? null, lastName: rest.join(' ') || null };
-};
 
 export const fetchOrCreateProfile = async (
   supabase: SupabaseClient,
@@ -57,13 +46,9 @@ export const fetchOrCreateProfile = async (
     return mapProfile(data as ProfileRow, user.email ?? null, signedAvatarUrl);
   }
 
-  const { firstName, lastName } = seedNames(user.user_metadata?.full_name);
-
   const insertPayload = {
     id: user.id,
     display_name: user.user_metadata?.full_name ?? user.email ?? 'Player',
-    first_name: firstName,
-    last_name: lastName,
   };
 
   const { data: inserted, error: insertError } = await supabase
@@ -82,10 +67,8 @@ export const fetchOrCreateProfile = async (
 
 export type ProfileUpdateInput = {
   displayName?: string;
-  firstName?: string;
-  lastName?: string;
-  dob?: string | null;
   avatarUrl?: string | null;
+  gradientColor?: string | null;
 };
 
 export const upsertProfileForUser = async (
@@ -96,10 +79,8 @@ export const upsertProfileForUser = async (
   const updateBody = {
     id: user.id,
     display_name: payload.displayName,
-    first_name: payload.firstName,
-    last_name: payload.lastName,
-    dob: payload.dob ?? null,
     avatar_url: payload.avatarUrl,
+    accent_color: payload.gradientColor ?? null,
   };
 
   const { data, error } = await supabase

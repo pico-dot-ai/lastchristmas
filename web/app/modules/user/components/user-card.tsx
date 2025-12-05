@@ -17,6 +17,12 @@ type UserCardProps = {
   initialEmail?: string;
 };
 
+type GradientOption = {
+  id: string;
+  gradient: string;
+  accent: string;
+};
+
 export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
   const [email, setEmail] = useState(initialEmail);
   const [user, setUser] = useState<UserProfile | null>(initialProfile);
@@ -28,12 +34,14 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [profileDraft, setProfileDraft] = useState<UpdateProfileInput>({
     displayName: initialProfile?.displayName ?? '',
+    gradientColor: initialProfile?.gradientColor ?? null,
   });
   const isSupabaseReady = isSupabaseConfigured();
 
   useEffect(() => {
     setProfileDraft({
       displayName: user?.displayName ?? '',
+      gradientColor: user?.gradientColor ?? null,
     });
     if (user?.email) {
       setEmail(user.email);
@@ -89,6 +97,16 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     }
     return 'Sign in to get started';
   }, [user?.email]);
+
+  const gradientOptions: GradientOption[] = [
+    { id: 'ocean', gradient: 'linear-gradient(135deg, #2563eb, #0ea5e9)', accent: '#6c7bd9' },
+    { id: 'sunset', gradient: 'linear-gradient(135deg, #f97316, #fb7185)', accent: '#fcd34d' },
+    { id: 'forest', gradient: 'linear-gradient(135deg, #059669, #22c55e)', accent: '#bbf7d0' },
+    { id: 'twilight', gradient: 'linear-gradient(135deg, #7c3aed, #2563eb)', accent: '#c4b5fd' },
+  ];
+
+  const selectedGradient =
+    gradientOptions.find((option) => option.id === profileDraft.gradientColor) ?? gradientOptions[0];
 
   const challengeBadges = user?.challenges ?? [];
 
@@ -154,6 +172,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     try {
       const updated = await updateProfile({
         displayName: profileDraft.displayName,
+        gradientColor: profileDraft.gradientColor ?? null,
       });
       setUser(updated);
       setIsEditing(false);
@@ -171,7 +190,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     await saveProfile();
   };
 
-  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files?.length) return;
 
     const file = event.target.files[0];
@@ -206,8 +225,28 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
           className={`user-card user-card__shell ${isEditing ? 'user-card__shell--editing' : ''}`}
           onSubmit={handleProfileSave}
         >
-          <div className="user-card__hero">
+          <div className="user-card__hero" style={{ background: selectedGradient.gradient }}>
             <div className="user-card__hero-bg" />
+            {isEditing ? (
+              <div className="user-card__palette" aria-label="Select gradient theme">
+                {gradientOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`user-card__swatch ${
+                      selectedGradient.id === option.id ? 'user-card__swatch--active' : ''
+                    }`}
+                    style={{ background: option.gradient }}
+                    onClick={() =>
+                      setProfileDraft((current) => ({ ...current, gradientColor: option.id }))
+                    }
+                    aria-pressed={selectedGradient.id === option.id}
+                  >
+                    <span className="user-card__swatch-ring" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
             <button
               type="button"
               className={`user-card__mode-button ${
@@ -300,6 +339,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
                     className="user-card__input"
                     placeholder="Display Name"
                     value={profileDraft.displayName ?? ''}
+                    style={{ color: selectedGradient.accent }}
                     onChange={(event) =>
                       setProfileDraft((current) => ({
                         ...current,
@@ -309,7 +349,12 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
                     disabled={isSavingProfile}
                   />
                 ) : profileDraft.displayName ? (
-                  <span className="user-card__field-text">{profileDraft.displayName}</span>
+                  <span
+                    className="user-card__field-text"
+                    style={{ color: selectedGradient.accent }}
+                  >
+                    {profileDraft.displayName}
+                  </span>
                 ) : null}
               </div>
             </div>

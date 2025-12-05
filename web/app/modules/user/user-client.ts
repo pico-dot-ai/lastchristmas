@@ -36,9 +36,7 @@ export const fetchProfile = async (): Promise<UserProfile | null> => {
 
 export type UpdateProfileInput = {
   displayName?: string;
-  firstName?: string;
-  lastName?: string;
-  dob?: string | null;
+  gradientColor?: string | null;
 };
 
 export const updateProfile = async (input: UpdateProfileInput): Promise<UserProfile> => {

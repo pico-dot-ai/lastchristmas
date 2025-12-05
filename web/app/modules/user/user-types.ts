@@ -7,4 +7,10 @@ export type UserProfile = {
   dob: string | null;
   avatarUrl: string | null;
   createdAt: string | null;
+  challenges?: UserChallenge[];
+};
+
+export type UserChallenge = {
+  name: string;
+  status: 'in' | 'out';
 };

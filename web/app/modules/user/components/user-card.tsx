@@ -25,20 +25,15 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSessionResolved, setIsSessionResolved] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
   const [profileDraft, setProfileDraft] = useState<UpdateProfileInput>({
     displayName: initialProfile?.displayName ?? '',
-    firstName: initialProfile?.firstName ?? '',
-    lastName: initialProfile?.lastName ?? '',
-    dob: initialProfile?.dob ?? null,
   });
   const isSupabaseReady = isSupabaseConfigured();
 
   useEffect(() => {
     setProfileDraft({
       displayName: user?.displayName ?? '',
-      firstName: user?.firstName ?? '',
-      lastName: user?.lastName ?? '',
-      dob: user?.dob ?? null,
     });
     if (user?.email) {
       setEmail(user.email);
@@ -95,6 +90,8 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     return 'Sign in to get started';
   }, [user?.email]);
 
+  const challengeBadges = user?.challenges ?? [];
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!email) return;
@@ -138,6 +135,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     try {
       await signOut();
       setUser(null);
+      setIsEditing(false);
     } catch (error) {
       setStatusMessage(
         error instanceof Error
@@ -147,17 +145,18 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     }
   };
 
-  const handleProfileSave = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const saveProfile = async () => {
     if (!user) return;
 
     setIsSavingProfile(true);
     setStatusMessage('');
 
     try {
-      const updated = await updateProfile(profileDraft);
+      const updated = await updateProfile({
+        displayName: profileDraft.displayName,
+      });
       setUser(updated);
-      setStatusMessage('Profile updated.');
+      setIsEditing(false);
     } catch (error) {
       setStatusMessage(
         error instanceof Error ? error.message : 'Unable to update your profile right now.',
@@ -165,6 +164,11 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     } finally {
       setIsSavingProfile(false);
     }
+  };
+
+  const handleProfileSave = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await saveProfile();
   };
 
   const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,161 +194,198 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     return null;
   }
 
-  return (
-    <section className="card">
-      <div className="card__header">
-        <p className="card__eyebrow">Auth & Users</p>
-        <h2 className="card__title">{greeting}</h2>
-        <p className="card__subtitle">
-          Use your email address to receive a secure, passwordless magic link via Supabase.
-        </p>
-      </div>
+  const visibleStatusMessage =
+    statusMessage && statusMessage.trim().toLowerCase() !== 'profile updated.';
 
+  const cardClassName = user ? 'user-card__container' : 'card';
+
+  return (
+    <section className={cardClassName}>
       {user ? (
-        <div className="card__section">
-          <div className="user-avatar">
-            {user.avatarUrl ? (
-              <Image
-                src={user.avatarUrl}
-                alt="User avatar"
-                width={96}
-                height={96}
-                className="user-avatar__image"
-                unoptimized
-              />
-            ) : (
-              <div className="user-avatar__placeholder" aria-hidden />
-            )}
-            <label className="button button--secondary">
-              {isUploadingAvatar ? 'Uploading...' : 'Upload avatar'}
-              <input
-                type="file"
-                accept="image/*"
-                className="user-avatar__input"
-                onChange={handleAvatarChange}
-                disabled={isUploadingAvatar}
-              />
-            </label>
+        <form
+          className={`user-card user-card__shell ${isEditing ? 'user-card__shell--editing' : ''}`}
+          onSubmit={handleProfileSave}
+        >
+          <div className="user-card__hero">
+            <div className="user-card__hero-bg" />
+            <button
+              type="button"
+              className={`user-card__mode-button ${
+                isEditing ? 'user-card__mode-button--confirm' : 'user-card__mode-button--edit'
+              }`}
+              aria-label={isEditing ? 'Save profile' : 'Edit profile'}
+              onClick={isEditing ? () => void saveProfile() : () => setIsEditing(true)}
+              disabled={isSavingProfile}
+            >
+              {isEditing ? (
+                <svg
+                  aria-hidden
+                  viewBox="0 0 20 20"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                >
+                  <path d="M5 10.5 8.5 14 15 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              ) : (
+                <svg
+                  aria-hidden
+                  viewBox="0 0 20 20"
+                  width="18"
+                  height="18"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M12.5 3.5 16.5 7.5 7.5 16.5H3.5V12.5L12.5 3.5Z" />
+                  <path d="M11.5 5.5 14.5 8.5" />
+                </svg>
+              )}
+            </button>
+
+            <div className="user-card__avatar-wrapper">
+              <div
+                className={`user-card__avatar ${
+                  isEditing || !user.avatarUrl ? 'user-card__avatar--editable' : ''
+                }`}
+              >
+                {user.avatarUrl ? (
+                  <Image
+                    src={user.avatarUrl}
+                    alt="User avatar"
+                    width={120}
+                    height={120}
+                    className="user-card__avatar-image"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="user-card__avatar-fallback" aria-hidden />
+                )}
+                {(isEditing || !user.avatarUrl) && (
+                  <label className="user-card__avatar-upload" aria-label="Upload avatar">
+                    {isUploadingAvatar ? (
+                      <span className="avatar-dots" aria-hidden>
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                    ) : (
+                      <span className="user-card__avatar-upload-icon">+</span>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="user-card__avatar-input"
+                      onChange={handleAvatarChange}
+                      disabled={isUploadingAvatar}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
 
-          <dl className="user-details">
-            <div className="user-details__row">
-              <dt>ID</dt>
-              <dd>{user.id}</dd>
-            </div>
-            <div className="user-details__row">
-              <dt>Email</dt>
-              <dd>{user.email}</dd>
-            </div>
-            <div className="user-details__row">
-              <dt>Display name</dt>
-              <dd>{user.displayName}</dd>
-            </div>
-            <div className="user-details__row">
-              <dt>First name</dt>
-              <dd>{user.firstName}</dd>
-            </div>
-            <div className="user-details__row">
-              <dt>Last name</dt>
-              <dd>{user.lastName}</dd>
-            </div>
-            <div className="user-details__row">
-              <dt>Date of birth</dt>
-              <dd>{user.dob ?? '—'}</dd>
-            </div>
-          </dl>
+          <div className="user-card__body">
+            <div className="user-card__fields">
+              <div className="user-card__field user-card__field--muted">
+                <span className="user-card__field-text">{user.email}</span>
+              </div>
 
-          <form className="card__section auth-form" onSubmit={handleProfileSave}>
-            <label htmlFor="displayName" className="auth-form__label">
-              Display name
+              <div className="user-card__field user-card__field--primary">
+                {isEditing ? (
+                  <input
+                    aria-label="Display Name"
+                    className="user-card__input"
+                    placeholder="Display Name"
+                    value={profileDraft.displayName ?? ''}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        displayName: event.target.value,
+                      }))
+                    }
+                    disabled={isSavingProfile}
+                  />
+                ) : profileDraft.displayName ? (
+                  <span className="user-card__field-text">{profileDraft.displayName}</span>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="user-card__challenges">
+              {challengeBadges.length ? (
+                challengeBadges.map((challenge) => (
+                  <div key={`${challenge.name}-${challenge.status}`} className="challenge-badge">
+                    <span className="challenge-badge__label">{challenge.name}</span>
+                    <span
+                      className={`challenge-badge__pill ${
+                        challenge.status === 'in'
+                          ? 'challenge-badge__pill--in'
+                          : 'challenge-badge__pill--out'
+                      }`}
+                    >
+                      {challenge.status === 'in' ? 'IN!' : 'OUT!'}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="user-card__challenges-empty">No challenges yet.</p>
+              )}
+            </div>
+
+            <div className="user-card__actions">
+              {isEditing ? (
+                <button
+                  type="button"
+                  className="user-card__link user-card__link--danger"
+                  onClick={() =>
+                    setStatusMessage('Delete account is not available yet in this preview.')
+                  }
+                >
+                  Delete account
+                </button>
+              ) : (
+                <span />
+              )}
+              <button type="button" className="user-card__link" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+          </div>
+        </form>
+      ) : (
+        <>
+          <div className="card__header">
+            <p className="card__eyebrow">Auth & Users</p>
+            <h2 className="card__title">{greeting}</h2>
+            <p className="card__subtitle">
+              Use your email address to receive a secure, passwordless magic link via Supabase.
+            </p>
+          </div>
+          <form className="card__section auth-form" onSubmit={handleSubmit}>
+            <label htmlFor="email" className="auth-form__label">
+              Email address
             </label>
             <input
-              id="displayName"
-              name="displayName"
-              type="text"
-              value={profileDraft.displayName ?? ''}
-              onChange={(event) =>
-                setProfileDraft((current) => ({ ...current, displayName: event.target.value }))
-              }
+              id="email"
+              name="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               className="auth-form__input"
-              placeholder="Display name"
+              placeholder="you@example.com"
+              required
             />
-
-            <label htmlFor="firstName" className="auth-form__label">
-              First name
-            </label>
-            <input
-              id="firstName"
-              name="firstName"
-              type="text"
-              value={profileDraft.firstName ?? ''}
-              onChange={(event) =>
-                setProfileDraft((current) => ({ ...current, firstName: event.target.value }))
-              }
-              className="auth-form__input"
-              placeholder="First name"
-            />
-
-            <label htmlFor="lastName" className="auth-form__label">
-              Last name
-            </label>
-            <input
-              id="lastName"
-              name="lastName"
-              type="text"
-              value={profileDraft.lastName ?? ''}
-              onChange={(event) =>
-                setProfileDraft((current) => ({ ...current, lastName: event.target.value }))
-              }
-              className="auth-form__input"
-              placeholder="Last name"
-            />
-
-            <label htmlFor="dob" className="auth-form__label">
-              Date of birth
-            </label>
-            <input
-              id="dob"
-              name="dob"
-              type="date"
-              value={profileDraft.dob ?? ''}
-              onChange={(event) =>
-                setProfileDraft((current) => ({ ...current, dob: event.target.value || null }))
-              }
-              className="auth-form__input"
-            />
-
-            <button className="button" type="submit" disabled={isSavingProfile}>
-              {isSavingProfile ? 'Saving...' : 'Save profile'}
+            <button className="button" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Sending...' : 'Send magic link'}
             </button>
           </form>
-
-          <button type="button" className="button button--secondary" onClick={handleLogout}>
-            Sign out
-          </button>
-        </div>
-      ) : (
-        <form className="card__section auth-form" onSubmit={handleSubmit}>
-          <label htmlFor="email" className="auth-form__label">
-            Email address
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="auth-form__input"
-            placeholder="you@example.com"
-            required
-          />
-          <button className="button" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Sending...' : 'Send magic link'}
-          </button>
-        </form>
+        </>
       )}
 
-      {statusMessage ? <p className="card__status">{statusMessage}</p> : null}
+      {visibleStatusMessage ? <p className="card__status">{visibleStatusMessage}</p> : null}
     </section>
   );
 }

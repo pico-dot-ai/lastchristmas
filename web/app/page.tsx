@@ -1,6 +1,6 @@
 import { getServerComponentSupabaseClient } from './lib/supabase/server';
-import { UserCard } from './modules/user/components/user-card';
 import { fetchOrCreateProfile } from './modules/user/profile-service';
+import { HomeStack } from './modules/home/components/home-stack';
 
 // Ensure dynamic rendering so auth cookies are available.
 export const dynamic = 'force-dynamic';
@@ -23,7 +23,7 @@ export default async function HomePage() {
       </header>
 
       <div className="page__content">
-        <UserCard initialProfile={profile} initialEmail={user?.email ?? ''} />
+        <HomeStack initialProfile={profile} initialEmail={user?.email ?? ''} />
       </div>
     </main>
   );

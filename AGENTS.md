@@ -2,6 +2,8 @@
 
 These instructions apply to the entire repository. Follow them alongside system and user directives.
 
+- Reference materials (e.g., `Reference/`) are for context only and are not the source of record for implementation decisions.
+
 ## Core engineering principles
 - Prioritize clean, modular code with clear separation of responsibilities; isolate features so changes to one area do not ripple into others.
 - Favor simple, holistic solutions over quick fixes. When addressing an issue, consider the surrounding design before implementing changes.

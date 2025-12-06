@@ -15,6 +15,7 @@ import { type UserProfile } from '../user-types';
 type UserCardProps = {
   initialProfile: UserProfile | null;
   initialEmail?: string;
+  onAccentChange?: (accent: string) => void;
 };
 
 type GradientOption = {
@@ -34,7 +35,7 @@ const isPlaceholderProfile = (profile: UserProfile | null) => {
   return name === email || name === 'player';
 };
 
-export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
+export function UserCard({ initialProfile, initialEmail = '', onAccentChange }: UserCardProps) {
   const [email, setEmail] = useState(initialEmail);
   const [user, setUser] = useState<UserProfile | null>(initialProfile);
   const [statusMessage, setStatusMessage] = useState('');
@@ -143,6 +144,10 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
 
   const selectedGradient =
     gradientOptions.find((option) => option.id === profileDraft.gradientColor) ?? gradientOptions[0];
+
+  useEffect(() => {
+    onAccentChange?.(selectedGradient.id);
+  }, [onAccentChange, selectedGradient.id]);
 
   const challengeBadges = user?.challenges ?? [];
 

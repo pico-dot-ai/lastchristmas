@@ -110,6 +110,18 @@ body {
   font-weight: 600;
 }
 
+.page__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.page__stack > * {
+  width: 100%;
+  max-width: 380px;
+}
+
 .button {
   appearance: none;
   border: none;
@@ -213,6 +225,7 @@ body {
 .user-card__container {
   max-width: 380px;
   margin: 0 auto;
+  width: 100%;
 }
 
 .user-card__shell {
@@ -714,6 +727,157 @@ body {
   text-decoration: none;
 }
 
+.little-wham {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+.little-wham__shell {
+  background: #ffffff;
+  border-radius: 22px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0px 18px 40px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.little-wham__hero {
+  position: relative;
+  height: 64px;
+  border-radius: 22px 22px 0 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+}
+
+.little-wham__hero-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.2), transparent 45%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.18), transparent 40%);
+}
+
+.little-wham__body {
+  padding: 1.25rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.little-wham__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: center;
+}
+
+.little-wham__eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.little-wham__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  position: relative;
+  z-index: 1;
+}
+
+.little-wham__subtitle {
+  margin: 0;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.little-wham__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.little-wham__label {
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 600;
+}
+
+.little-wham__input-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.little-wham__input {
+  flex: 1;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  padding: 0.8rem 0.9rem;
+  font-size: 1rem;
+  color: #0f172a;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.little-wham__input:focus {
+  outline: none;
+  border-color: #5b8def;
+  box-shadow: 0 0 0 3px rgba(91, 141, 239, 0.18);
+}
+
+.little-wham__input::placeholder {
+  color: #94a3b8;
+  opacity: var(--placeholder-opacity, 1);
+  transition: opacity 200ms ease;
+}
+
+.little-wham__button {
+  white-space: nowrap;
+  padding: 0.85rem 1rem;
+}
+
+.little-wham__status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.little-wham__status-text {
+  margin: 0;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.little-wham__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.little-wham__pill {
+  background: #eef2ff;
+  color: #3730a3;
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 1px solid #e0e7ff;
+}
+
+.little-wham__pill--soft {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
 @keyframes skeletonShimmer {
   0% {
     background-position: 200% 0;
@@ -742,5 +906,15 @@ body {
 
   .page__title {
     font-size: 1.85rem;
+  }
+
+  .little-wham__input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .little-wham__button {
+    width: 100%;
+    text-align: center;
   }
 }

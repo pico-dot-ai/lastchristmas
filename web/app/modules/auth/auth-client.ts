@@ -19,15 +19,23 @@ export type AuthSubscription = {
   unsubscribe: () => void;
 };
 
+const getSiteUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  if (envUrl) return envUrl.replace(/\/+$/, '');
+  if (typeof window !== 'undefined') return window.location.origin;
+  return '';
+};
+
 export const requestMagicLink = async (email: string) =>
   getSupabaseClientOrThrow().auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
+      emailRedirectTo: `${getSiteUrl()}/auth/callback`,
     },
   });
 
-export const signOut = () => getSupabaseClientOrThrow().auth.signOut();
+export const signOut = (scope: 'global' | 'local' | 'others' = 'global') =>
+  getSupabaseClientOrThrow().auth.signOut({ scope });
 
 export const getSession = () => getSupabaseClientOrThrow().auth.getSession();
 

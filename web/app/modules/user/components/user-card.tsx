@@ -151,9 +151,13 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     }
 
     try {
-      await signOut();
+      const { error } = await signOut('global');
+      if (error) {
+        throw error;
+      }
       setUser(null);
       setIsEditing(false);
+      setIsSessionResolved(true);
     } catch (error) {
       setStatusMessage(
         error instanceof Error
@@ -216,7 +220,7 @@ const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
   const visibleStatusMessage =
     statusMessage && statusMessage.trim().toLowerCase() !== 'profile updated.';
 
-  const cardClassName = user ? 'user-card__container' : 'card';
+  const cardClassName = 'user-card__container';
 
   return (
     <section className={cardClassName}>
@@ -336,7 +340,7 @@ const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
                 {isEditing ? (
                   <input
                     aria-label="Display Name"
-                    className="user-card__input"
+                    className="user-card__input user-card__input--display"
                     placeholder="Display Name"
                     value={profileDraft.displayName ?? ''}
                     style={{ color: selectedGradient.accent }}
@@ -394,40 +398,59 @@ const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
               ) : (
                 <span />
               )}
-              <button type="button" className="user-card__link" onClick={handleLogout}>
+              <button
+                type="button"
+                className="user-card__link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  void handleLogout();
+                }}
+              >
                 Logout
               </button>
             </div>
           </div>
         </form>
       ) : (
-        <>
-          <div className="card__header">
-            <p className="card__eyebrow">Auth & Users</p>
-            <h2 className="card__title">{greeting}</h2>
-            <p className="card__subtitle">
-              Use your email address to receive a secure, passwordless magic link via Supabase.
-            </p>
+        <form
+          className="user-card user-card__shell user-card__shell--login user-card__shell--editing"
+          onSubmit={handleSubmit}
+        >
+          <div className="user-card__hero" style={{ background: selectedGradient.gradient }}>
+            <div className="user-card__hero-bg" />
+            <div className="user-card__avatar-wrapper">
+              <div className="user-card__avatar user-card__avatar--neutral">
+                <div className="user-card__avatar-fallback" aria-hidden />
+              </div>
+            </div>
           </div>
-          <form className="card__section auth-form" onSubmit={handleSubmit}>
-            <label htmlFor="email" className="auth-form__label">
-              Email address
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              className="auth-form__input"
-              placeholder="you@example.com"
-              required
-            />
-            <button className="button" type="submit" disabled={isSubmitting}>
+
+          <div className="user-card__body">
+            <div className="user-card__fields">
+              <div className="user-card__field user-card__field--primary user-card__field--login-email">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="user-card__input user-card__input--email"
+                  placeholder="you@email.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <p className="user-card__login-copy">
+              We like to keep things simple. Enter your email above and we&apos;ll send you a link to
+              log in or create a new account. No passwords, no useless info. That&apos;s it!
+            </p>
+
+            <button className="button button--magic" type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Sending...' : 'Send magic link'}
             </button>
-          </form>
-        </>
+          </div>
+        </form>
       )}
 
       {visibleStatusMessage ? <p className="card__status">{visibleStatusMessage}</p> : null}

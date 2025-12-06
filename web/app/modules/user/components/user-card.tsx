@@ -23,6 +23,17 @@ type GradientOption = {
   accent: string;
 };
 
+const isPlaceholderProfile = (profile: UserProfile | null) => {
+  if (!profile) return true;
+
+  const name = (profile.displayName ?? '').trim().toLowerCase();
+  const email = (profile.email ?? '').trim().toLowerCase();
+
+  if (!name) return true;
+
+  return name === email || name === 'player';
+};
+
 export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
   const [email, setEmail] = useState(initialEmail);
   const [user, setUser] = useState<UserProfile | null>(initialProfile);
@@ -82,7 +93,10 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
         const profile = await fetchProfile();
         setUser(profile);
 
-        if (!hasTriggeredNewProfileEdit.current && !initialProfile && !userRef.current && profile) {
+        const shouldEnterEdit =
+          !hasTriggeredNewProfileEdit.current && isPlaceholderProfile(profile);
+
+        if (shouldEnterEdit) {
           setProfileDraft((current) => ({ ...current, displayName: '' }));
           setIsEditing(true);
           hasTriggeredNewProfileEdit.current = true;

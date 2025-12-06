@@ -349,6 +349,43 @@ body {
   background: linear-gradient(135deg, #d5d9e2, #e7eaf1);
 }
 
+.user-card__shell--loading {
+  box-shadow: none;
+  background: #f5f6fa;
+}
+
+.user-card__shell--loaded {
+  animation: cardFadeIn 220ms ease-out;
+}
+
+.user-card__hero--loading {
+  height: 110px;
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.user-card__hero-bg--loading {
+  opacity: 0.35;
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.user-card__avatar--loading {
+  background: #ffffff;
+  border: 1px dashed #e2e8f0;
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.user-card__avatar-fallback--loading {
+  background: #eef1f6;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
 .user-card__avatar-upload {
   position: absolute;
   inset: 0;
@@ -482,6 +519,15 @@ body {
   width: 100%;
 }
 
+.user-card__field--skeleton {
+  height: 48px;
+  background: #eef1f6;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
 .user-card__field--login-email {
   background: #ffffff;
   border: 1px solid rgba(15, 23, 42, 0.05);
@@ -570,6 +616,20 @@ body {
   margin-bottom: 1rem;
 }
 
+.user-card__skeleton-pill {
+  height: 32px;
+  width: 140px;
+  background: #eef1f6;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.user-card__skeleton-pill--small {
+  width: 90px;
+}
+
 .user-card__challenges-empty {
   margin: 0;
   color: #6b7280;
@@ -624,6 +684,20 @@ body {
   padding-right: 0.5rem;
 }
 
+.user-card__skeleton-link {
+  display: inline-block;
+  height: 14px;
+  width: 80px;
+  background: #eef1f6;
+  border-radius: 6px;
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.user-card__skeleton-link--wide {
+  width: 120px;
+}
+
 .user-card__link {
   background: none;
   border: none;
@@ -640,6 +714,25 @@ body {
   text-decoration: none;
 }
 
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @media (max-width: 480px) {
   .page {
     padding: 1.5rem 1.25rem 2.5rem;

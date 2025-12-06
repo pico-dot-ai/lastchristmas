@@ -246,7 +246,39 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
   };
 
   if (!isSessionResolved) {
-    return null;
+    const loadingGradient = 'linear-gradient(135deg, #e5e7eb, #f3f4f6)';
+
+    return (
+      <section className="user-card__container">
+        <div className="user-card user-card__shell user-card__shell--loading">
+          <div className="user-card__hero user-card__hero--loading" style={{ background: loadingGradient }}>
+            <div className="user-card__hero-bg user-card__hero-bg--loading" />
+            <div className="user-card__avatar-wrapper">
+              <div className="user-card__avatar user-card__avatar--loading">
+                <div className="user-card__avatar-fallback user-card__avatar-fallback--loading" aria-hidden />
+              </div>
+            </div>
+          </div>
+
+          <div className="user-card__body">
+            <div className="user-card__fields">
+              <div className="user-card__field user-card__field--skeleton" />
+              <div className="user-card__field user-card__field--skeleton user-card__field--primary" />
+            </div>
+
+            <div className="user-card__challenges">
+              <div className="user-card__skeleton-pill" />
+              <div className="user-card__skeleton-pill user-card__skeleton-pill--small" />
+            </div>
+
+            <div className="user-card__actions">
+              <span className="user-card__skeleton-link" />
+              <span className="user-card__skeleton-link user-card__skeleton-link--wide" />
+            </div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
   const visibleStatusMessage =
@@ -258,7 +290,9 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     <section className={cardClassName}>
       {user ? (
         <form
-          className={`user-card user-card__shell ${isEditing ? 'user-card__shell--editing' : ''}`}
+          className={`user-card user-card__shell user-card__shell--loaded ${
+            isEditing ? 'user-card__shell--editing' : ''
+          }`}
           onSubmit={handleProfileSave}
         >
           <div className="user-card__hero" style={{ background: selectedGradient.gradient }}>
@@ -445,7 +479,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
         </form>
       ) : (
         <form
-          className="user-card user-card__shell user-card__shell--login user-card__shell--editing"
+          className="user-card user-card__shell user-card__shell--login user-card__shell--editing user-card__shell--loaded"
           onSubmit={handleSubmit}
         >
           <div className="user-card__hero" style={{ background: selectedGradient.gradient }}>

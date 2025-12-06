@@ -30,7 +30,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [isSessionResolved, setIsSessionResolved] = useState(true);
+  const [isSessionResolved, setIsSessionResolved] = useState(() => Boolean(initialProfile));
   const [isEditing, setIsEditing] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const hasTriggeredNewProfileEdit = useRef(false);
@@ -67,6 +67,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
       setStatusMessage(
         'Supabase environment variables are missing. Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to enable authentication.',
       );
+      setIsSessionResolved(true);
       return () => undefined;
     }
 
@@ -225,7 +226,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
     await saveProfile();
   };
 
-const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files?.length) return;
 
     const file = event.target.files[0];

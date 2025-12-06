@@ -143,8 +143,18 @@ body {
   background: linear-gradient(135deg, #10b981, #22c55e);
   color: #ffffff;
   padding-inline: 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
+.button--magic-sent {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: #ffffff;
+  padding-inline: 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: default;
+}
 .auth-form__label {
   display: block;
   font-weight: 700;

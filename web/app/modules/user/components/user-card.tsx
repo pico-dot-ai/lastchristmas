@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getSession, onAuthStateChange, requestMagicLink, signOut } from '../../auth/auth-client';
 import { isSupabaseConfigured } from '../../../lib/supabase/client';
 import {
@@ -32,6 +32,10 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isSessionResolved, setIsSessionResolved] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const hasTriggeredNewProfileEdit = useRef(false);
+  const userRef = useRef<UserProfile | null>(initialProfile);
+  const isNewProfileEdit = useRef(false);
   const [profileDraft, setProfileDraft] = useState<UpdateProfileInput>({
     displayName: initialProfile?.displayName ?? '',
     gradientColor: initialProfile?.gradientColor ?? null,
@@ -39,12 +43,22 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
   const isSupabaseReady = isSupabaseConfigured();
 
   useEffect(() => {
-    setProfileDraft({
-      displayName: user?.displayName ?? '',
-      gradientColor: user?.gradientColor ?? null,
-    });
+    userRef.current = user;
+    if (isNewProfileEdit.current) {
+      setProfileDraft({
+        displayName: '',
+        gradientColor: user?.gradientColor ?? null,
+      });
+    } else {
+      setProfileDraft({
+        displayName: user?.displayName ?? '',
+        gradientColor: user?.gradientColor ?? null,
+      });
+    }
     if (user?.email) {
       setEmail(user.email);
+    } else if (!user) {
+      setEmail('');
     }
   }, [user]);
 
@@ -66,6 +80,13 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
         }
         const profile = await fetchProfile();
         setUser(profile);
+
+        if (!hasTriggeredNewProfileEdit.current && !initialProfile && !userRef.current && profile) {
+          setProfileDraft((current) => ({ ...current, displayName: '' }));
+          setIsEditing(true);
+          hasTriggeredNewProfileEdit.current = true;
+          isNewProfileEdit.current = true;
+        }
       } catch (error) {
         setStatusMessage(
           error instanceof Error
@@ -123,13 +144,15 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
 
     setIsSubmitting(true);
     setStatusMessage('Sending magic link...');
+    setMagicLinkSent(true);
 
     try {
       const { error } = await requestMagicLink(email);
       if (error) {
         setStatusMessage(error.message);
+        setMagicLinkSent(false);
       } else {
-        setStatusMessage('Check your email for the magic link.');
+        setStatusMessage('Check your email!');
       }
     } catch (error) {
       setStatusMessage(
@@ -150,6 +173,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
       return;
     }
 
+    setStatusMessage('');
     try {
       const { error } = await signOut('global');
       if (error) {
@@ -157,6 +181,12 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
       }
       setUser(null);
       setIsEditing(false);
+      hasTriggeredNewProfileEdit.current = false;
+      userRef.current = null;
+      setEmail('');
+      setProfileDraft({ displayName: '', gradientColor: null });
+      setMagicLinkSent(false);
+      isNewProfileEdit.current = false;
       setIsSessionResolved(true);
     } catch (error) {
       setStatusMessage(
@@ -180,6 +210,7 @@ export function UserCard({ initialProfile, initialEmail = '' }: UserCardProps) {
       });
       setUser(updated);
       setIsEditing(false);
+      isNewProfileEdit.current = false;
     } catch (error) {
       setStatusMessage(
         error instanceof Error ? error.message : 'Unable to update your profile right now.',
@@ -420,7 +451,14 @@ const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
             <div className="user-card__hero-bg" />
             <div className="user-card__avatar-wrapper">
               <div className="user-card__avatar user-card__avatar--neutral">
-                <div className="user-card__avatar-fallback" aria-hidden />
+                <Image
+                  src="/drummer_boy.png"
+                  alt="Default avatar"
+                  width={120}
+                  height={120}
+                  className="user-card__avatar-image"
+                  unoptimized
+                />
               </div>
             </div>
           </div>
@@ -446,8 +484,12 @@ const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) =>
               log in or create a new account. No passwords, no useless info. That&apos;s it!
             </p>
 
-            <button className="button button--magic" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Sending...' : 'Send magic link'}
+            <button
+              className={`button ${magicLinkSent ? 'button--magic-sent' : 'button--magic'}`}
+              type="submit"
+              disabled={isSubmitting || magicLinkSent}
+            >
+              {magicLinkSent ? 'Check your email!' : isSubmitting ? 'Sending...' : 'Send magic link'}
             </button>
           </div>
         </form>
